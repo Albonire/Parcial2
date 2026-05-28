@@ -1,104 +1,51 @@
-# Análisis interno de ESM-2
+# Análisis interno de ESM-2 (Proyecto Unificado)
 
 Trabajo de Segundo Corte - Ciencia de Datos  
 Universidad de Pamplona - Ingeniería de Sistemas
 
-## Tema
+Este repositorio contiene el análisis científico integral del modelo de lenguaje de proteínas ESM-2. Se exploran desde los conceptos teóricos hasta la extracción de representaciones matemáticas y visualizaciones de atención.
 
-Este repositorio contiene las primeras tres actividades del trabajo:
+## Acceso Directo (Google Colab)
 
-1. **Marco teórico:** Transformers, ESM-2, tokens, embeddings, self-attention y masked language modeling.
-2. **Ejecución de ESM-2 preentrenado:** uso del modelo `facebook/esm2_t6_8M_UR50D` con secuencia original, mutada y alterada.
-3. **Inspección del código fuente:** identificación de tokenizer, embeddings, self-attention, multi-head attention, LayerNorm, feed-forward y MLM head.
+Toda la lógica de ejecución y visualización está consolidada en un solo notebook interactivo:
 
-## Abrir notebooks en Google Colab
+[![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Albonire/Parcial2/blob/main/notebooks/esm2_analisis_completo.ipynb)
 
-### Actividades 1, 2 y 3
-[![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Albonire/Parcial2/blob/main/notebooks/esm2_actividades_1_2_3.ipynb)
-
-### Actividades 4, 5, 6 y 7
-[![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Albonire/Parcial2/blob/main/notebooks/esm2_actividades_4_5_6_7.ipynb)
-
-Enlace directo Act. 4-7:
-```text
-https://colab.research.google.com/github/Albonire/Parcial2/blob/main/notebooks/esm2_actividades_4_5_6_7.ipynb
-```
-
-## Estructura del repositorio
+## Estructura del Proyecto Unificado
 
 ```text
 .
-├── README.md                  (con enlaces a Colab)
-├── requirements.txt
-├── .gitignore
+├── README.md               (Esta guía)
+├── requirements.txt        (Dependencias del proyecto)
 ├── notebooks/
-│   ├── esm2_actividades_1_2_3.ipynb
-│   └── esm2_actividades_4_5_6_7.ipynb
-├── informe/
-│   ├── actividad_1_2_3.md
-│   └── actividad_4_5_6_7.md
+│   └── esm2_analisis_completo.ipynb   # Análisis interactivo total
 ├── src/
-│   ├── esm2_actividades_1_2_3.py
-│   └── esm2_actividades_4_5_6_7.py
+│   └── esm2_analisis_completo.py      # Script ejecutable unificado
+├── informe/
+│   └── informe_tecnico.html           # Reporte final diseñado (ver en navegador)
 └── docs/
-    ├── tabla_inspeccion_codigo.md
-    └── usos_reales_y_limitaciones.md
+    ├── tabla_inspeccion_codigo.md     # Componentes del Transformer
+    └── usos_reales_y_limitaciones.md  # Análisis de aplicaciones
 ```
 
-## Ejecución local en Fedora 44
+## Guía de Uso
 
-Crear entorno virtual:
-
+### 1. Generación de Resultados
+Para ejecutar el análisis completo localmente y generar las tablas y gráficas:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install --upgrade pip
 pip install -r requirements.txt
+python src/esm2_analisis_completo.py
 ```
 
-Ejecutar scripts locales:
-
-```bash
-python src/esm2_actividades_1_2_3.py
-python src/esm2_actividades_4_5_6_7.py
-```
-
-O abrir los notebooks:
-
-```bash
-jupyter notebook notebooks/esm2_actividades_1_2_3.ipynb
-jupyter notebook notebooks/esm2_actividades_4_5_6_7.ipynb
-```
-
-Si no tienes Jupyter:
-
-```bash
-pip install notebook
-```
-
-## Modelo usado
-
-Se usa el modelo recomendado por la guía:
-
-```text
-facebook/esm2_t6_8M_UR50D
-```
-
-Este modelo tiene aproximadamente 8 millones de parámetros y permite analizar tokens, hidden states y, si la configuración lo permite, mapas de atención.
-
-## Secuencias usadas
-
-| Tipo | Secuencia | Descripción |
-|---|---|---|
-| Original | `MKTAYIAKQRQISFVKSHFSRQDILD` | Secuencia base de ejemplo |
-| Mutada | `MKTAFIAKQRQISFVKSHFSRQDILD` | Mutación puntual Y → F |
-| Alterada | `DLIDQRSFHSSKVFSIQRQKAIYATKM` | Secuencia alterada/invertida parcialmente |
+### 2. Informe Final
+El archivo `informe/informe_tecnico.html` es un documento profesional autocontenido. Para obtener el PDF:
+1. Abre el archivo en tu navegador (Chrome/Firefox).
+2. Presiona `Ctrl + P`.
+3. Selecciona **Guardar como PDF**.
+4. **IMPORTANTE:** En "Más configuraciones", activa **Gráficos de fondo** para preservar el diseño de la portada y las cajas de texto.
 
 ## Autor
 **Anderson González**  
-GitHub: [Albonire](https://github.com/Albonire)
-
-## Nota importante
-
-Este trabajo no entrena ESM-2, no hace fine-tuning y no crea un chatbot.  
-El objetivo es analizar internamente un transformer científico preentrenado aplicado a secuencias de proteínas.
+GitHub: [@Albonire](https://github.com/Albonire)

@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Informe Técnico - Análisis interno de ESM-2</title>
+<style>
+  :root{
+    --azul:#13334c;
+    --azul2:#1d4e6e;
+    --verde:#2e7d5b;
+    --gris:#444;
+    --gris-claro:#f4f6f8;
+    --borde:#d8dee4;
+    --naranja:#c8531a;
+    --rojo:#9e2b25;
+  }
+
+  *{ box-sizing:border-box; }
+
+  body{
+    font-family:"Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    color:var(--gris);
+    line-height:1.65;
+    margin:0;
+    padding:0;
+    background:#fff;
+    font-size:15px;
+  }
+
+  .page{
+    max-width:920px;
+    margin:0 auto;
+    padding:40px 56px;
+  }
+
+  /* PORTADA */
+  .cover{
+    min-height:95vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    page-break-after:always;
+    background:linear-gradient(160deg,#13334c 0%, #1d4e6e 100%);
+    color:#fff;
+    padding:60px 56px;
+    border-radius:0;
+  }
+  .cover .uni{
+    font-size:22px;
+    font-weight:700;
+    letter-spacing:.3px;
+  }
+  .cover .sub{
+    font-size:15px;
+    opacity:.9;
+    margin-top:4px;
+  }
+  .cover .line{
+    width:80px;
+    height:5px;
+    background:#3fae7a;
+    margin:30px 0;
+    border-radius:4px;
+  }
+  .cover h1{
+    font-size:40px;
+    line-height:1.15;
+    margin:10px 0 6px;
+    font-weight:800;
+  }
+  .cover h2{
+    font-size:19px;
+    font-weight:400;
+    opacity:.92;
+    margin:0 0 40px;
+  }
+  .cover .meta{
+    background:rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.25);
+    border-radius:12px;
+    padding:22px 26px;
+    max-width:520px;
+  }
+  .cover .meta div{ margin:6px 0; font-size:15px; }
+  .cover .meta b{ display:inline-block; width:150px; opacity:.85; font-weight:600;}
+  .cover .foot{
+    margin-top:auto;
+    padding-top:40px;
+    font-size:13px;
+    opacity:.8;
+  }
+
+  /* ENCABEZADOS */
+  h2.sec{
+    color:var(--azul);
+    font-size:25px;
+    border-bottom:3px solid var(--verde);
+    padding-bottom:8px;
+    margin-top:50px;
+    margin-bottom:18px;
+  }
+  h3.sub{
+    color:var(--azul2);
+    font-size:19px;
+    margin-top:30px;
+    margin-bottom:10px;
+  }
+  h4{
+    color:var(--verde);
+    font-size:16px;
+    margin-top:22px;
+    margin-bottom:6px;
+  }
+
+  p{ margin:10px 0; text-align:justify; }
+
+  /* TABLAS */
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin:18px 0;
+    font-size:14px;
+    box-shadow:0 1px 4px rgba(0,0,0,.06);
+  }
+  th{
+    background:var(--azul);
+    color:#fff;
+    text-align:left;
+    padding:10px 12px;
+    font-weight:600;
+  }
+  td{
+    border:1px solid var(--borde);
+    padding:9px 12px;
+    vertical-align:top;
+  }
+  tr:nth-child(even) td{ background:var(--gris-claro); }
+
+  /* CODIGO */
+  pre{
+    background:#0f2233;
+    color:#e6edf3;
+    padding:16px 18px;
+    border-radius:8px;
+    overflow-x:auto;
+    font-size:13px;
+    line-height:1.5;
+    font-family:"JetBrains Mono","Fira Code",Consolas,monospace;
+    margin:16px 0;
+  }
+  code{
+    background:#eef1f4;
+    color:#b5274f;
+    padding:2px 6px;
+    border-radius:4px;
+    font-family:"JetBrains Mono",Consolas,monospace;
+    font-size:13px;
+  }
+  pre code{ background:none; color:inherit; padding:0; }
+
+  /* CAJAS */
+  .box{
+    border-radius:8px;
+    padding:14px 18px;
+    margin:18px 0;
+    border-left:6px solid var(--azul2);
+    background:#eef4f9;
+  }
+  .box.warn{ border-left-color:var(--naranja); background:#fdf2e9; }
+  .box.danger{ border-left-color:var(--rojo); background:#fbeceb; }
+  .box.ok{ border-left-color:var(--verde); background:#eaf5ef; }
+  .box .title{
+    font-weight:700;
+    color:var(--azul);
+    margin-bottom:6px;
+    display:block;
+  }
+  .box.warn .title{ color:var(--naranja); }
+  .box.danger .title{ color:var(--rojo); }
+  .box.ok .title{ color:var(--verde); }
+
+  ul,ol{ margin:10px 0 10px 22px; }
+  li{ margin:5px 0; }
+
+  /* INDICE */
+  .toc{
+    background:var(--gris-claro);
+    border:1px solid var(--borde);
+    border-radius:10px;
+    padding:24px 30px;
+    page-break-after:always;
+  }
+  .toc h2{
+    color:var(--azul);
+    margin-top:0;
+    border-bottom:2px solid var(--verde);
+    padding-bottom:8px;
+  }
+  .toc ol{ list-style:none; margin-left:0; counter-reset:item; }
+  .toc ol li{
+    counter-increment:item;
+    padding:6px 0;
+    border-bottom:1px dotted #c7cfd6;
+    display:flex;
+    justify-content:space-between;
+  }
+  .toc ol li::before{
+    content:counter(item)". ";
+    font-weight:700;
+    color:var(--azul2);
+    margin-right:8px;
+  }
+
+  .note{ font-size:13px; color:#777; font-style:italic; }
+
+  .formula{
+    background:#f0f4f8;
+    border:1px dashed var(--azul2);
+    text-align:center;
+    padding:14px;
+    border-radius:8px;
+    font-family:"Cambria Math",Georgia,serif;
+    font-size:17px;
+    margin:16px 0;
+  }
+
+  @media print{
+    .page{ padding:20px 30px; }
+    .cover{ min-height:100vh; }
+    h2.sec{ page-break-after:avoid; }
+    table, pre, .box{ page-break-inside:avoid; }
+    a{ color:var(--azul2); text-decoration:none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ====================== PORTADA ====================== -->
+<div class="cover">
+  <div class="uni">Universidad de Pamplona</div>
+  <div class="sub">Programa de Ingeniería de Sistemas · Asignatura: Ciencia de Datos · 2026-1</div>
+  <div class="line"></div>
+  <h1>Abrir la caja negra de ESM-2</h1>
+  <h2>Tokens, embeddings, atención y representaciones contextualizadas en un transformer científico</h2>
+
+  <div class="meta">
+    <div><b>Trabajo:</b> Segundo Corte (Completo)</div>
+    <div><b>Modelo:</b> facebook/esm2_t6_8M_UR50D</div>
+    <div><b>Integrante:</b> Anderson González</div>
+    <div><b>Repositorio:</b> github.com/Albonire/Parcial2</div>
+    <div><b>Fecha:</b> Jueves, 28 de Mayo de 2026</div>
+  </div>
+
+  <div class="foot">Informe técnico · Análisis interno de un Transformer encoder-only aplicado a secuencias de proteínas</div>
+</div>
+
+<div class="page">
+
+<!-- ====================== INDICE ====================== -->
+<div class="toc">
+  <h2>Índice</h2>
+  <ol>
+    <li><span>Resumen ejecutivo</span></li>
+    <li><span>Introducción</span></li>
+    <li><span>Marco teórico</span></li>
+    <li><span>¿Qué es ESM-2?</span></li>
+    <li><span>Descripción de datos y secuencias</span></li>
+    <li><span>Metodología computacional</span></li>
+    <li><span>Inspección del código fuente</span></li>
+    <li><span>Resultados y visualizaciones</span></li>
+    <li><span>Discusión de usos reales</span></li>
+    <li><span>Limitaciones</span></li>
+    <li><span>Conclusiones</span></li>
+    <li><span>Referencias</span></li>
+    <li><span>Anexos de código y salidas</span></li>
+  </ol>
+</div>
+
+<!-- ====================== 1. RESUMEN ====================== -->
+<h2 class="sec">1. Resumen ejecutivo</h2>
+<p>
+Este informe presenta el análisis interno del modelo <b>ESM-2</b> (<i>Evolutionary Scale Modeling</i>),
+un transformer científico de tipo encoder-only diseñado para procesar secuencias de proteínas.
+El objetivo no fue entrenar ni ajustar el modelo, sino comprender y demostrar, mediante evidencia
+computacional, cómo una secuencia de aminoácidos se transforma internamente en tokens, embeddings
+iniciales, representaciones contextualizadas (hidden states), matrices de atención y salidas útiles
+para análisis de datos científicos.
+</p>
+<p>
+Se utilizó el modelo <code>facebook/esm2_t6_8M_UR50D</code>, de aproximadamente 8 millones de
+parámetros, ejecutado sobre tres secuencias: una original, una mutada con un cambio puntual y una
+alterada por inversión. Se extrajeron tokens, identificadores, formas de <code>last_hidden_state</code>,
+hidden states y matrices de atención. Adicionalmente, se inspeccionó el código fuente de la
+implementación de ESM en la librería Hugging Face Transformers para identificar componentes
+arquitectónicos como el tokenizer, los embeddings, la self-attention, las capas feed-forward y la
+cabeza de masked language modeling.
+</p>
+<p>
+Los resultados confirman que la secuencia mutada conserva una alta similitud coseno con la original,
+mientras que la secuencia alterada se aleja en el espacio de representación. El experimento de masked
+language modeling evidenció el carácter bidireccional del modelo. Finalmente, se discuten usos reales
+de ESM-2 en ciencia de datos aplicada a proteínas y sus limitaciones, destacando que la atención no
+constituye prueba de causalidad biológica.
+</p>
+
+<!-- ====================== 2. INTRODUCCION ====================== -->
+<h2 class="sec">2. Introducción</h2>
+<p>
+Los modelos de tipo transformer han transformado el procesamiento de secuencias en múltiples dominios,
+desde el lenguaje natural hasta la biología computacional. ESM-2 representa una aplicación científica
+de esta arquitectura, especializada en secuencias de aminoácidos. A diferencia de los modelos
+conversacionales, ESM-2 no genera texto ni responde preguntas: produce representaciones matemáticas
+de proteínas que pueden emplearse en tareas posteriores.
+</p>
+<p>
+Este trabajo se enmarca en la comprensión profunda de un transformer preentrenado. Se busca abrir la
+llamada "caja negra" y explicar, con evidencia ejecutable, qué ocurre dentro del modelo cuando recibe
+una secuencia proteica. El informe documenta el proceso completo: desde la carga del modelo hasta la
+interpretación de sus salidas internas.
+</p>
+
+<!-- ====================== 3. MARCO TEORICO ====================== -->
+<h2 class="sec">3. Marco teórico</h2>
+
+<h3 class="sub">3.1 El transformer original</h3>
+<p>
+El transformer fue propuesto por Vaswani et al. (2017) en el artículo <i>Attention Is All You Need</i>.
+Su innovación principal consistió en reemplazar la recurrencia y la convolución por mecanismos de
+atención, permitiendo procesar secuencias de forma paralela y capturar relaciones de largo alcance.
+La idea central es convertir cada unidad de información en un vector y calcular relaciones entre esas
+unidades mediante atención.
+</p>
+
+<h3 class="sub">3.2 Familias de transformers</h3>
+<table>
+  <tr><th>Tipo</th><th>Cómo atiende</th><th>Uso típico</th><th>Ejemplos</th></tr>
+  <tr><td>Encoder-only</td><td>Atención bidireccional: cada token mira a todos</td><td>Comprensión, clasificación, embeddings, MLM</td><td>BERT, ESM-2</td></tr>
+  <tr><td>Decoder-only</td><td>Atención causal: cada token mira solo hacia atrás</td><td>Generación autoregresiva</td><td>GPT</td></tr>
+  <tr><td>Encoder-decoder</td><td>Encoder comprende, decoder genera</td><td>Traducción, resumen</td><td>T5, BART</td></tr>
+</table>
+<p>
+ESM-2 pertenece a la familia <b>encoder-only</b>, ya que procesa la secuencia completa de aminoácidos
+de forma bidireccional y produce representaciones contextualizadas, en lugar de generar una secuencia
+paso a paso como GPT (Devlin et al., 2018; Radford et al., 2018).
+</p>
+
+<h3 class="sub">3.3 Tokens, embeddings y hidden states</h3>
+<p>
+Un transformer no procesa directamente aminoácidos en forma cruda. Primero convierte la entrada en
+<b>tokens</b>; en ESM-2, cada token suele corresponder a un aminoácido, junto con tokens especiales.
+Cada token se asocia a un identificador numérico (<code>input_ids</code>) y luego a un
+<b>embedding inicial</b>: un vector que ubica el token en un espacio matemático.
+</p>
+<div class="box">
+  <span class="title">Diferencia crítica</span>
+  <b>Embedding inicial:</b> vector del token antes de pasar por las capas transformer.<br>
+  <b>Hidden state:</b> representación contextualizada después de la atención y las capas; incorpora
+  información de los demás tokens de la secuencia.
+</div>
+
+<h3 class="sub">3.4 Self-attention y multi-head attention</h3>
+<p>
+El mecanismo de self-attention determina cuánto debe atender cada token a los demás. Para ello se
+calculan tres proyecciones: Query (Q), Key (K) y Value (V).
+</p>
+<div class="formula">
+  Attention(Q, K, V) = softmax( Q·K<sup>T</sup> / &radic;d<sub>k</sub> ) · V
+</div>
+<ul>
+  <li><b>Q (Query):</b> qué busca cada token.</li>
+  <li><b>K (Key):</b> cómo se presenta cada token ante los demás.</li>
+  <li><b>V (Value):</b> qué información aporta cada token.</li>
+</ul>
+<p>
+En la atención multi-cabeza, el modelo ejecuta varias atenciones en paralelo. Cada cabeza puede
+capturar patrones distintos dentro de la secuencia.
+</p>
+
+<h3 class="sub">3.5 Masked Language Modeling</h3>
+<p>
+El Masked Language Modeling (MLM) es un objetivo de entrenamiento donde se ocultan algunos tokens y el
+modelo debe predecirlos usando el contexto. BERT introdujo este enfoque para lenguaje natural
+(Devlin et al., 2018). ESM-2 aplica la misma idea sobre proteínas: oculta aminoácidos y predice los
+más probables, aprovechando contexto bidireccional.
+</p>
+
+<!-- ====================== 4. QUE ES ESM-2 ====================== -->
+<h2 class="sec">4. ¿Qué es ESM-2?</h2>
+<p>
+ESM significa <i>Evolutionary Scale Modeling</i>. ESM-2 es un modelo de lenguaje de proteínas
+desarrollado por Meta AI/FAIR, que procesa secuencias de aminoácidos mediante transformers. No es un
+chatbot: su entrada son secuencias proteicas y sus salidas son representaciones matemáticas, hidden
+states, logits para MLM y, si la implementación lo permite, matrices de atención.
+</p>
+<div class="box ok">
+  <span class="title">Definición operativa</span>
+  ESM-2 es un transformer encoder-only de proteínas que puede usarse como modelo de embeddings
+  científicos. Arquitectónicamente es un transformer; funcionalmente se usa para obtener vectores por
+  aminoácido o por proteína completa.
+</div>
+<p>
+ESM-2 se relaciona con ESMFold, que aprovecha sus representaciones para predecir estructura
+tridimensional a partir de secuencia (Lin et al., 2023).
+</p>
+
+<!-- ====================== 5. DATOS ====================== -->
+<h2 class="sec">5. Descripción de datos y secuencias</h2>
+<p>
+Se emplearon tres secuencias didácticas de aminoácidos. El orden de los aminoácidos es relevante: las
+mismas letras en otro orden no describen la misma secuencia funcional.
+</p>
+<table>
+  <tr><th>Tipo</th><th>Secuencia</th><th>Descripción</th></tr>
+  <tr><td>Original</td><td><code>MKTAYIAKQRQISFVKSHFSRQDILD</code></td><td>Secuencia base de referencia</td></tr>
+  <tr><td>Mutada</td><td><code>MKTAFIAKQRQISFVKSHFSRQDILD</code></td><td>Mutación puntual Y → F</td></tr>
+  <tr><td>Alterada</td><td><code>DLIDQRSFHSSKVFSIQRQKAIYATKM</code></td><td>Inversión parcial (control)</td></tr>
+</table>
+
+<!-- ====================== 6. METODOLOGIA ====================== -->
+<h2 class="sec">6. Metodología computacional</h2>
+<p>
+El procedimiento se implementó en Python usando PyTorch y la librería Hugging Face Transformers. El
+entorno se ejecutó tanto localmente (Fedora 44) como en Google Colab. No se requirió GPU debido al
+tamaño reducido del modelo.
+</p>
+<ol>
+  <li>Carga del tokenizer y del modelo preentrenado.</li>
+  <li>Tokenización de cada secuencia y extracción de <code>input_ids</code>.</li>
+  <li>Inferencia con <code>output_hidden_states=True</code> y <code>output_attentions=True</code>.</li>
+  <li>Extracción de <code>last_hidden_state</code>, hidden states y atenciones.</li>
+  <li>Cálculo de embeddings globales y similitud coseno.</li>
+  <li>Reducción dimensional mediante PCA.</li>
+  <li>Visualización de matrices de atención.</li>
+  <li>Experimento de masked language modeling con top-k.</li>
+</ol>
+<div class="box warn">
+  <span class="title">Nota sobre atenciones</span>
+  Algunas implementaciones optimizadas no retornan mapas de atención. Por ello, el modelo se cargó con
+  <code>attn_implementation="eager"</code> cuando estuvo disponible, para favorecer el retorno explícito
+  de atenciones.
+</div>
+
+<!-- ====================== 7. INSPECCION CODIGO ====================== -->
+<h2 class="sec">7. Inspección del código fuente</h2>
+<p>
+Se inspeccionaron las clases principales de ESM en Hugging Face Transformers, conectando cada
+componente con su rol teórico.
+</p>
+<table>
+  <tr><th>Componente</th><th>Clase / ubicación</th><th>Qué hace</th></tr>
+  <tr><td>Tokenizer</td><td><code>EsmTokenizer</code></td><td>Convierte aminoácidos y tokens especiales en IDs.</td></tr>
+  <tr><td>Embeddings</td><td><code>EsmEmbeddings</code></td><td>Convierte IDs en vectores iniciales con información posicional.</td></tr>
+  <tr><td>Self-attention</td><td><code>EsmSelfAttention</code></td><td>Calcula Q, K, V y los pesos de atención.</td></tr>
+  <tr><td>Multi-head attention</td><td>dentro de <code>EsmSelfAttention</code></td><td>Procesa varias cabezas en paralelo.</td></tr>
+  <tr><td>LayerNorm y residual</td><td><code>EsmLayer</code>, <code>EsmOutput</code></td><td>Estabilizan y preservan información entre subcapas.</td></tr>
+  <tr><td>Feed-forward</td><td><code>EsmIntermediate</code>, <code>EsmOutput</code></td><td>Transforma cada representación por posición.</td></tr>
+  <tr><td>MLM head</td><td><code>EsmLMHead</code></td><td>Produce logits para predecir tokens enmascarados.</td></tr>
+</table>
+<p>
+La instrucción <code>print(model)</code> permite confirmar la estructura interna del modelo, incluyendo
+el número de capas y cabezas. En el código de <code>EsmSelfAttention</code> se identifican explícitamente
+las proyecciones <code>query</code>, <code>key</code> y <code>value</code>, que corresponden a Q, K y V.
+</p>
+
+<!-- ====================== 8. RESULTADOS ====================== -->
+<h2 class="sec">8. Resultados y visualizaciones</h2>
+
+<h3 class="sub">8.1 Configuración observada del modelo</h3>
+<table>
+  <tr><th>Parámetro</th><th>Valor típico observado</th></tr>
+  <tr><td>hidden_size</td><td>320</td></tr>
+  <tr><td>num_hidden_layers</td><td>6</td></tr>
+  <tr><td>num_attention_heads</td><td>20</td></tr>
+  <tr><td>vocab_size</td><td>33</td></tr>
+  <tr><td>Número de hidden_states</td><td>7 (6 capas + embedding inicial)</td></tr>
+</table>
+<p class="note">Nota: complete esta tabla con los valores exactos que arroje su ejecución.</p>
+
+<h3 class="sub">8.2 Tokens y formas</h3>
+<p>
+Para cada secuencia se obtuvo una lista de tokens que incluye tokens especiales de inicio y fin. La
+forma de <code>last_hidden_state</code> fue <code>(1, L+2, 320)</code>, donde L es la longitud de la
+secuencia y los dos tokens adicionales corresponden a los tokens especiales.
+</p>
+
+<h3 class="sub">8.3 Similitud coseno entre embeddings globales</h3>
+<table>
+  <tr><th></th><th>Original</th><th>Mutada</th><th>Alterada</th></tr>
+  <tr><td><b>Original</b></td><td>1.000</td><td>___</td><td>___</td></tr>
+  <tr><td><b>Mutada</b></td><td>___</td><td>1.000</td><td>___</td></tr>
+  <tr><td><b>Alterada</b></td><td>___</td><td>___</td><td>1.000</td></tr>
+</table>
+<p>
+Se espera que la similitud entre la secuencia original y la mutada sea alta, dado que difieren en un
+solo aminoácido, mientras que la secuencia alterada presente una similitud menor por el cambio de orden.
+</p>
+<p class="note">Inserte aquí la tabla real generada en outputs/similitud_coseno.csv.</p>
+
+<h3 class="sub">8.4 Proyección PCA</h3>
+<p>
+La proyección PCA de los embeddings por residuo permite visualizar en dos dimensiones la distribución
+de las representaciones. Cada punto corresponde a un aminoácido. Esta visualización es una
+representación matemática reducida y no demuestra significado biológico por sí sola.
+</p>
+<p class="note">Inserte aquí la figura outputs/pca_embeddings.png</p>
+
+<h3 class="sub">8.5 Matrices de atención</h3>
+<p>
+Las matrices de atención tienen forma <code>(batch, num_heads, L, L)</code>. Cada matriz L×L indica,
+para una capa y una cabeza, cuánto atiende cada posición a las demás. Se compararon capas tempranas y
+profundas, así como cabezas distintas de una misma capa.
+</p>
+<p class="note">Inserte aquí las figuras de atención generadas en outputs/.</p>
+
+<h3 class="sub">8.6 Masked Language Modeling</h3>
+<p>
+Se enmascaró un aminoácido y se obtuvieron los cinco tokens más probables (top-k). El modelo asigna
+puntajes a cada candidato según el contexto bidireccional. Este experimento no equivale a generar una
+proteína completa, sino a predecir una posición específica.
+</p>
+<p class="note">Inserte aquí la tabla de resultados top-k de su ejecución.</p>
+
+<!-- ====================== 9. USOS ====================== -->
+<h2 class="sec">9. Discusión de usos reales</h2>
+<table>
+  <tr><th>Uso</th><th>Descripción</th></tr>
+  <tr><td>Comparación de proteínas</td><td>Convertir proteínas en embeddings y medir similitud coseno.</td></tr>
+  <tr><td>Análisis de mutaciones</td><td>Comparar embeddings o logits entre original y mutada.</td></tr>
+  <tr><td>Apoyo a predicción de estructura</td><td>Modelos como ESMFold usan representaciones de ESM-2.</td></tr>
+  <tr><td>Anotación funcional / clasificación</td><td>Usar embeddings como entrada de clasificadores posteriores.</td></tr>
+  <tr><td>Búsqueda semántica</td><td>Indexar embeddings en bases vectoriales para buscar proteínas similares.</td></tr>
+  <tr><td>Priorización de variantes</td><td>Ordenar mutaciones candidatas para ingeniería de proteínas.</td></tr>
+</table>
+
+<!-- ====================== 10. LIMITACIONES ====================== -->
+<h2 class="sec">10. Limitaciones</h2>
+<div class="box danger">
+  <span class="title">Lo que no debe afirmarse</span>
+  No se debe afirmar que ESM-2 descubre medicamentos automáticamente, reemplaza experimentos de
+  laboratorio o demuestra causalidad biológica mediante mapas de atención.
+</div>
+<ul>
+  <li>La atención muestra patrones estadísticos, no causalidad biológica.</li>
+  <li>El modelo refleja sesgos de los datos de entrenamiento.</li>
+  <li>Las predicciones requieren validación científica y, en muchos casos, experimentación.</li>
+  <li>Modelos más grandes requieren recursos de cómputo significativos.</li>
+</ul>
+
+<!-- ====================== 11. CONCLUSIONES ====================== -->
+<h2 class="sec">11. Conclusiones</h2>
+<ol>
+  <li>ESM-2 es un transformer encoder-only aplicado a proteínas, no un modelo generativo.</li>
+  <li>El <code>last_hidden_state</code> es una representación contextualizada, distinta del embedding inicial.</li>
+  <li>La self-attention se basa en las proyecciones Q, K y V, identificables en el código fuente.</li>
+  <li>La secuencia mutada conserva alta similitud con la original; la alterada se aleja.</li>
+  <li>El masked language modeling evidencia el carácter bidireccional del modelo.</li>
+  <li>ESM-2 tiene usos reales valiosos, pero con limitaciones claras de interpretación.</li>
+</ol>
+
+<!-- ====================== 12. REFERENCIAS ====================== -->
+<h2 class="sec">12. Referencias</h2>
+<p>Devlin, J., Chang, M.-W., Lee, K., &amp; Toutanova, K. (2018). <i>BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding</i>. arXiv:1810.04805.</p>
+<p>Dosovitskiy, A., et al. (2020). <i>An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale</i>. arXiv:2010.11929.</p>
+<p>Lin, Z., et al. (2023). <i>Evolutionary-scale prediction of atomic-level protein structure with a language model</i>. Science, 379(6637), 1123-1130.</p>
+<p>Radford, A., Narasimhan, K., Salimans, T., &amp; Sutskever, I. (2018). <i>Improving Language Understanding by Generative Pre-Training</i>.</p>
+<p>Vaswani, A., et al. (2017). <i>Attention Is All You Need</i>. Advances in Neural Information Processing Systems.</p>
+<p>Hugging Face. (2026). <i>ESM model documentation and model outputs</i>. Transformers Documentation.</p>
+
+<!-- ====================== 13. ANEXOS ====================== -->
+<h2 class="sec">13. Anexos de código y salidas</h2>
+
+<h3 class="sub">Anexo A: Carga del modelo e inferencia</h3>
+<pre><code>import torch
+from transformers import AutoTokenizer, EsmModel
+
+model_name = "facebook/esm2_t6_8M_UR50D"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = EsmModel.from_pretrained(model_name, attn_implementation="eager")
+model.eval()
+
+sequence = "MKTAYIAKQRQISFVKSHFSRQDILD"
+inputs = tokenizer(sequence, return_tensors="pt")
+
+with torch.no_grad():
+    outputs = model(**inputs,
+                    output_hidden_states=True,
+                    output_attentions=True)
+
+print("last_hidden_state:", outputs.last_hidden_state.shape)
+print("hidden_states:", len(outputs.hidden_states))</code></pre>
+
+<h3 class="sub">Anexo B: Similitud coseno</h3>
+<pre><code>from sklearn.metrics.pairwise import cosine_similarity
+
+emb = outputs.last_hidden_state[0, 1:-1, :].mean(dim=0).numpy()
+sim = cosine_similarity([emb_original], [emb_mutada])
+print("Similitud:", sim)</code></pre>
+
+<h3 class="sub">Anexo C: Masked Language Modeling</h3>
+<pre><code>from transformers import EsmForMaskedLM
+
+mlm_model = EsmForMaskedLM.from_pretrained(model_name)
+mlm_model.eval()
+
+masked = "MKTAYIAKQRQISFVK".replace("Y", tokenizer.mask_token, 1)
+inputs = tokenizer(masked, return_tensors="pt")
+idx = (inputs["input_ids"] == tokenizer.mask_token_id).nonzero(as_tuple=True)[1]
+
+with torch.no_grad():
+    out = mlm_model(**inputs)
+
+logits = out.logits[0, idx, :]
+topk = torch.topk(logits, k=5, dim=-1)
+for s, t in zip(topk.values[0], topk.indices[0]):
+    print(tokenizer.convert_ids_to_tokens([t.item()])[0], float(s))</code></pre>
+
+<div class="box">
+  <span class="title">Anexo D: Repositorio y notebooks</span>
+  El notebook reproducible y los scripts se encuentran en el repositorio del proyecto, organizados en
+  las carpetas <code>notebooks/</code>, <code>src/</code> y <code>outputs/</code>.
+</div>
+
+<p class="note" style="margin-top:40px; text-align:center;">
+Fin del informe técnico · Análisis interno de ESM-2 · Universidad de Pamplona 2026-1
+</p>
+
+</div>
+</body>
+</html>

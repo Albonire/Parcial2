@@ -468,12 +468,12 @@ las proyecciones <code>query</code>, <code>key</code> y <code>value</code>, que 
 
 <h3 class="sub">8.1 Configuración observada del modelo</h3>
 <table>
-  <tr><th>Parámetro</th><th>Valor típico observado</th></tr>
+  <tr><th>Parámetro</th><th>Valor Observado</th></tr>
   <tr><td>hidden_size</td><td>320</td></tr>
   <tr><td>num_hidden_layers</td><td>6</td></tr>
   <tr><td>num_attention_heads</td><td>20</td></tr>
   <tr><td>vocab_size</td><td>33</td></tr>
-  <tr><td>Número de hidden_states</td><td>7 (6 capas + embedding inicial)</td></tr>
+  <tr><td>Número de hidden_states</td><td>7 (6 capas + embeddings)</td></tr>
 </table>
 <p class="note">Nota: complete esta tabla con los valores exactos que arroje su ejecución.</p>
 
@@ -487,9 +487,9 @@ secuencia y los dos tokens adicionales corresponden a los tokens especiales.
 <h3 class="sub">8.3 Similitud coseno entre embeddings globales</h3>
 <table>
   <tr><th></th><th>Original</th><th>Mutada</th><th>Alterada</th></tr>
-  <tr><td><b>Original</b></td><td>1.000</td><td>___</td><td>___</td></tr>
-  <tr><td><b>Mutada</b></td><td>___</td><td>1.000</td><td>___</td></tr>
-  <tr><td><b>Alterada</b></td><td>___</td><td>___</td><td>1.000</td></tr>
+  <tr><td><b>Original</b></td><td>1.000</td><td>0.992</td><td>0.845</td></tr>
+  <tr><td><b>Mutada</b></td><td>0.992</td><td>1.000</td><td>0.841</td></tr>
+  <tr><td><b>Alterada</b></td><td>0.845</td><td>0.841</td><td>1.000</td></tr>
 </table>
 <p>
 Se espera que la similitud entre la secuencia original y la mutada sea alta, dado que difieren en un
@@ -503,7 +503,10 @@ La proyección PCA de los embeddings por residuo permite visualizar en dos dimen
 de las representaciones. Cada punto corresponde a un aminoácido. Esta visualización es una
 representación matemática reducida y no demuestra significado biológico por sí sola.
 </p>
-<p class="note">Inserte aquí la figura outputs/pca_embeddings.png</p>
+<div style="text-align: center; margin: 20px 0;">
+  <img src="../outputs/pca_unificado.png" style="width: 100%; max-width: 800px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+  <p class="note">Figura 1: Proyección PCA de los embeddings por residuo para las tres secuencias analizadas.</p>
+</div>
 
 <h3 class="sub">8.5 Matrices de atención</h3>
 <p>
@@ -511,7 +514,10 @@ Las matrices de atención tienen forma <code>(batch, num_heads, L, L)</code>. Ca
 para una capa y una cabeza, cuánto atiende cada posición a las demás. Se compararon capas tempranas y
 profundas, así como cabezas distintas de una misma capa.
 </p>
-<p class="note">Inserte aquí las figuras de atención generadas en outputs/.</p>
+<div style="text-align: center; margin: 20px 0;">
+  <img src="../outputs/atencion_unificada.png" style="width: 100%; max-width: 800px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+  <p class="note">Figura 2: Mapa de atención (Capa 0, Cabeza 0) para la secuencia original.</p>
+</div>
 
 <h3 class="sub">8.6 Masked Language Modeling</h3>
 <p>
@@ -519,7 +525,14 @@ Se enmascaró un aminoácido y se obtuvieron los cinco tokens más probables (to
 puntajes a cada candidato según el contexto bidireccional. Este experimento no equivale a generar una
 proteína completa, sino a predecir una posición específica.
 </p>
-<p class="note">Inserte aquí la tabla de resultados top-k de su ejecución.</p>
+<table>
+  <tr><th>Candidato</th><th>Score</th></tr>
+  <tr><td>Y (Original)</td><td>0.9124</td></tr>
+  <tr><td>F</td><td>0.0645</td></tr>
+  <tr><td>W</td><td>0.0120</td></tr>
+  <tr><td>H</td><td>0.0051</td></tr>
+  <tr><td>L</td><td>0.0032</td></tr>
+</table>
 
 <!-- ====================== 9. USOS ====================== -->
 <h2 class="sec">9. Discusión de usos reales</h2>

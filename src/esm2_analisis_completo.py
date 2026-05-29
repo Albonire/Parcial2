@@ -57,10 +57,17 @@ def run_analysis(tokenizer, model, mlm_model):
 
     print("\n--- 2. Similitud y PCA ---")
     glob_embs = {}
+    residue_embs_list = []
+    residue_labels = []
+    
     for name, (inputs, out) in results.items():
         # Media de residuos (excluyendo tokens especiales)
-        glob_embs[name] = out.last_hidden_state[0, 1:-1, :].mean(dim=0).numpy()
+        res_states = out.last_hidden_state[0, 1:-1, :].numpy()
+        glob_embs[name] = res_states.mean(axis=0)
+        residue_embs_list.append(res_states)
+        residue_labels.extend([name] * res_states.shape[0])
     
+    # Similitud Coseno
     names = list(glob_embs.keys())
     matrix = np.array([glob_embs[n] for n in names])
     sim = cosine_similarity(matrix)
@@ -69,14 +76,38 @@ def run_analysis(tokenizer, model, mlm_model):
     print(df_sim)
     df_sim.to_csv(os.path.join(OUTPUT_DIR, "similitud_unificada.csv"))
 
+    # PCA
+    all_res_embs = np.vstack(residue_embs_list)
+    pca = PCA(n_components=2)
+    coords = pca.fit_transform(all_res_embs)
+    
+    plt.figure(figsize=(10, 7))
+    for name in names:
+        idx = [i for i, l in enumerate(residue_labels) if l == name]
+        plt.scatter(coords[idx, 0], coords[idx, 1], label=name, alpha=0.6)
+    plt.title("PCA de Embeddings por Residuo")
+    plt.xlabel("PC1")
+    plt.ylabel("PC2")
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.savefig(os.path.join(OUTPUT_DIR, "pca_unificado.png"))
+    plt.close()
+    print("Gráfica PCA guardada.")
+
     print("\n--- 3. Mapas de Atención ---")
     orig_out = results["Original"][1]
     if orig_out.attentions:
+        tokens = tokenizer.convert_ids_to_tokens(results["Original"][0]["input_ids"][0])
         att = orig_out.attentions[0][0, 0].detach().numpy()
-        plt.imshow(att, aspect="auto")
-        plt.colorbar()
+        plt.figure(figsize=(8, 7))
+        plt.imshow(att, aspect="auto", cmap="viridis")
+        plt.colorbar(label="Peso de atención")
+        plt.xticks(range(len(tokens)), tokens, rotation=90)
+        plt.yticks(range(len(tokens)), tokens)
         plt.title("Atención: Capa 0, Cabeza 0 (Original)")
+        plt.tight_layout()
         plt.savefig(os.path.join(OUTPUT_DIR, "atencion_unificada.png"))
+        plt.close()
         print("Gráfica de atención guardada.")
 
     print("\n--- 4. Masked Language Modeling ---")
@@ -92,9 +123,22 @@ def run_analysis(tokenizer, model, mlm_model):
         print(f"  Token: {token} | Score: {s:.4f}")
 
 def main():
-    tokenizer, model, mlm_model = setup()
+    setup()
+    tokenizer, model, mlm_model = setup_models() # Refactored
     run_analysis(tokenizer, model, mlm_model)
     print("\nAnálisis completo finalizado. Resultados en la carpeta 'outputs/'.")
+
+def setup_models(): # Added to fix logic
+    print(f"Cargando modelos: {MODEL_NAME}...")
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    try:
+        model = EsmModel.from_pretrained(MODEL_NAME, attn_implementation="eager")
+    except:
+        model = EsmModel.from_pretrained(MODEL_NAME)
+    model.eval()
+    mlm_model = EsmForMaskedLM.from_pretrained(MODEL_NAME)
+    mlm_model.eval()
+    return tokenizer, model, mlm_model
 
 if __name__ == "__main__":
     main()

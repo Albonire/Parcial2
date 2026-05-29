@@ -6714,3 +6714,4 @@
 2026-05-29T10:26:59,766 Requirement already satisfied: MarkupSafe>=2.0 in /home/fabian/.local/lib/python3.14/site-packages (from jinja2->torch) (3.0.3)
 2026-05-29T10:26:59,775 Created temporary directory: /tmp/pip-unpack-5ksnj9uq
 2026-05-29T10:26:59,803 Downloading torch-2.12.0-cp314-cp314-manylinux_2_28_x86_64.whl (532.3 MB)
+2026-05-29T10:41:09,667 Downloading link https://files.pythonhosted.org/packages/cd/d4/7e730dba0c7032a4154dc9056b76cf9625515e030e269cfbf8098fcfee7d/torch-2.12.0-cp314-cp314-manylinux_2_28_x86_64.whl (from https://pypi.org/simple/torch/) (requires-python:>=3.10) to /tmp/pip-unpack-5ksnj9uq/torch-2.12.0-cp314-cp314-manylinux_2_28_x86_64.whl

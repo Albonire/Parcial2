@@ -1,144 +1,151 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Análisis interno de ESM-2: PROYECTO COMPLETO (Actividades 1-7)
-
-Este script integra todas las fases del análisis:
-1. Inspección de arquitectura y formas.
-2. Extracción de hidden states y embeddings globales.
-3. Visualización de similitud coseno y PCA.
-4. Generación de mapas de atención.
-5. Experimento de Masked Language Modeling.
-"""
 
 import os
+import inspect
+import textwrap
 import torch
 import numpy as np
 import pandas as pd
-import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.decomposition import PCA
 from transformers import AutoTokenizer, EsmModel, EsmForMaskedLM
+from transformers.models.esm import modeling_esm
 
-# CONFIGURACIÓN
+# Configuration
 MODEL_NAME = "facebook/esm2_t6_8M_UR50D"
 SEQUENCES = {
     "Original": "MKTAYIAKQRQISFVKSHFSRQDILD",
-    "Mutada": "MKTAFIAKQRQISFVKSHFSRQDILD",
+    "Mutada":   "MKTAFIAKQRQISFVKSHFSRQDILD",
     "Alterada": "DLIDQRSFHSSKVFSIQRQKAIYATKM",
 }
-OUTPUT_DIR = "outputs"
 
-def setup():
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    print(f"Cargando modelos: {MODEL_NAME}...")
+OUTPUT_DIR = "/home/fabian/Documents/university/CienciasDeDatoss/Parcial2/outputs"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+def main():
+    print(f"Loading model: {MODEL_NAME}...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    
+    # Try to load with eager implementation for explicit attentions
     try:
         model = EsmModel.from_pretrained(MODEL_NAME, attn_implementation="eager")
-    except:
+        print("EsmModel loaded with attn_implementation='eager'.")
+    except Exception:
         model = EsmModel.from_pretrained(MODEL_NAME)
+        print("EsmModel loaded with default implementation.")
     model.eval()
+
     mlm_model = EsmForMaskedLM.from_pretrained(MODEL_NAME)
     mlm_model.eval()
-    return tokenizer, model, mlm_model
 
-def run_analysis(tokenizer, model, mlm_model):
-    print("\n--- 1. Extracción de Hidden States ---")
     results = {}
+    print("\n--- Running Inference ---")
     for name, seq in SEQUENCES.items():
         inputs = tokenizer(seq, return_tensors="pt")
         with torch.no_grad():
             out = model(**inputs, output_hidden_states=True, output_attentions=True)
-        results[name] = (inputs, out)
-        print(f"Secuencia '{name}' procesada. Shape: {out.last_hidden_state.shape}")
+        
+        tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
+        ids = inputs["input_ids"][0].tolist()
+        
+        print(f"Processed {name}: length={len(seq)}, tokens={len(tokens)}")
+        results[name] = (inputs, out, tokens, ids)
 
-    print("\n--- 2. Similitud y PCA ---")
+    # 1. Global Similiarity
+    print("\n--- Calculating Similarity ---")
     glob_embs = {}
-    residue_embs_list = []
-    residue_labels = []
-    
-    for name, (inputs, out) in results.items():
-        # Media de residuos (excluyendo tokens especiales)
-        res_states = out.last_hidden_state[0, 1:-1, :].numpy()
-        glob_embs[name] = res_states.mean(axis=0)
-        residue_embs_list.append(res_states)
-        residue_labels.extend([name] * res_states.shape[0])
-    
-    # Similitud Coseno
+    for name, (inputs, out, tokens, ids) in results.items():
+        # Average pooling excluding CLS and EOS tokens
+        emb = out.last_hidden_state[0, 1:-1, :].mean(dim=0).numpy()
+        glob_embs[name] = emb
+
     names = list(glob_embs.keys())
     matrix = np.array([glob_embs[n] for n in names])
     sim = cosine_similarity(matrix)
     df_sim = pd.DataFrame(sim, index=names, columns=names)
-    print("Matriz de similitud coseno:")
+    df_sim.to_csv(os.path.join(OUTPUT_DIR, "similitud_coseno.csv"))
     print(df_sim)
-    df_sim.to_csv(os.path.join(OUTPUT_DIR, "similitud_unificada.csv"))
 
-    # PCA
-    all_res_embs = np.vstack(residue_embs_list)
-    pca = PCA(n_components=2)
-    coords = pca.fit_transform(all_res_embs)
+    # 2. PCA
+    print("\n--- Generating PCA ---")
+    all_vecs, all_labels = [], []
+    for name in names:
+        _, out, _, _ = results[name]
+        v = out.last_hidden_state[0, 1:-1, :].numpy()
+        all_vecs.append(v)
+        all_labels += [name] * v.shape[0]
     
+    all_vecs = np.vstack(all_vecs)
+    coords = PCA(n_components=2).fit_transform(all_vecs)
+
     plt.figure(figsize=(10, 7))
     for name in names:
-        idx = [i for i, l in enumerate(residue_labels) if l == name]
-        plt.scatter(coords[idx, 0], coords[idx, 1], label=name, alpha=0.6)
-    plt.title("PCA de Embeddings por Residuo")
-    plt.xlabel("PC1")
-    plt.ylabel("PC2")
+        idx = [i for i, l in enumerate(all_labels) if l == name]
+        plt.scatter(coords[idx, 0], coords[idx, 1], label=name, alpha=0.6, edgecolors='w')
+    plt.title("PCA de embeddings por residuo (ESM-2)")
+    plt.xlabel("PC1"); plt.ylabel("PC2")
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.5)
-    plt.savefig(os.path.join(OUTPUT_DIR, "pca_unificado.png"))
+    plt.tight_layout()
+    plt.savefig(os.path.join(OUTPUT_DIR, \"pca_unificado.png\"), dpi=150)\n",
     plt.close()
-    print("Gráfica PCA guardada.")
 
-    print("\n--- 3. Mapas de Atención ---")
-    orig_out = results["Original"][1]
-    if orig_out.attentions:
-        tokens = tokenizer.convert_ids_to_tokens(results["Original"][0]["input_ids"][0])
-        att = orig_out.attentions[0][0, 0].detach().numpy()
-        plt.figure(figsize=(8, 7))
-        plt.imshow(att, aspect="auto", cmap="viridis")
-        plt.colorbar(label="Peso de atención")
+
+    # 3. Attention Maps
+    print("\n--- Plotting Attentions ---")
+    def plot_att(att, tokens, title, fname):
+        plt.figure(figsize=(10, 9))
+        plt.imshow(att, cmap='viridis')
+        plt.title(title)
         plt.xticks(range(len(tokens)), tokens, rotation=90)
         plt.yticks(range(len(tokens)), tokens)
-        plt.title("Atención: Capa 0, Cabeza 0 (Original)")
+        plt.colorbar(label="Attention weight")
         plt.tight_layout()
-        plt.savefig(os.path.join(OUTPUT_DIR, "atencion_unificada.png"))
+        plt.savefig(os.path.join(OUTPUT_DIR, fname), dpi=150)
         plt.close()
-        print("Gráfica de atención guardada.")
 
-    print("\n--- 4. Masked Language Modeling ---")
-    masked_seq = SEQUENCES["Original"].replace("Y", tokenizer.mask_token, 1)
-    inputs_m = tokenizer(masked_seq, return_tensors="pt")
-    mask_idx = (inputs_m.input_ids == tokenizer.mask_token_id).nonzero(as_tuple=True)[1]
+    _, out_o, tokens_o, _ = results["Original"]
+    if out_o.attentions is not None:
+        n_layers = len(out_o.attentions)
+        # Layer 0, Head 0
+        plot_att(out_o.attentions[0][0, 0].numpy(), tokens_o, 
+                 "Atención - Capa 0, Cabeza 0 (Secuencia Original)", "atencion_capa_0_cabeza_0.png")
+        # Deep Layer
+        plot_att(out_o.attentions[-1][0, 0].numpy(), tokens_o, 
+                 f"Atención - Capa {n_layers-1}, Cabeza 0", "atencion_capa_profunda.png")
+        
+        # Compare Original vs Mutated
+        _, out_m, tokens_m, _ = results["Mutada"]
+        plot_att(out_m.attentions[0][0, 0].numpy(), tokens_m, 
+                 "Atención - Capa 0, Cabeza 0 (Secuencia Mutada)", "atencion_mutada_capa_0_cabeza_0.png")
+
+    # 4. Masked Language Modeling
+    print("\n--- Masked Language Modeling ---")
+    orig_seq = SEQUENCES["Original"]
+    # Masking 'Y' at index 4 (0-indexed)
+    masked_seq = list(orig_seq)
+    masked_seq[4] = tokenizer.mask_token
+    masked_seq_str = "".join(masked_seq)
+    
+    inputs_mlm = tokenizer(masked_seq_str, return_tensors="pt")
+    mask_idx = (inputs_mlm.input_ids == tokenizer.mask_token_id).nonzero(as_tuple=True)[1]
+
     with torch.no_grad():
-        logits = mlm_model(**inputs_m).logits
-    top5 = torch.topk(logits[0, mask_idx, :], 5)
-    print(f"Predicción para posición enmascarada (era 'Y'):")
+        logits = mlm_model(**inputs_mlm).logits
+
+    probs = torch.softmax(logits[0, mask_idx, :], dim=-1)
+    top5 = torch.topk(probs, 5)
+    
+    mlm_results = []
+    print(f"Predictions for masked position in {orig_seq} (was 'Y'):")
     for s, i in zip(top5.values[0], top5.indices[0]):
-        token = tokenizer.convert_ids_to_tokens([i.item()])[0]
-        print(f"  Token: {token} | Score: {s:.4f}")
+        tok = tokenizer.convert_ids_to_tokens([i.item()])[0]
+        print(f"  {tok}: {float(s):.4f}")
+        mlm_results.append({"token": tok, "prob": float(s)})
+    
+    pd.DataFrame(mlm_results).to_csv(os.path.join(OUTPUT_DIR, "mlm_predictions.csv"), index=False)
 
-def main():
-    setup()
-    tokenizer, model, mlm_model = setup_models() # Refactored
-    run_analysis(tokenizer, model, mlm_model)
-    print("\nAnálisis completo finalizado. Resultados en la carpeta 'outputs/'.")
-
-def setup_models(): # Added to fix logic
-    print(f"Cargando modelos: {MODEL_NAME}...")
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-    try:
-        model = EsmModel.from_pretrained(MODEL_NAME, attn_implementation="eager")
-    except:
-        model = EsmModel.from_pretrained(MODEL_NAME)
-    model.eval()
-    mlm_model = EsmForMaskedLM.from_pretrained(MODEL_NAME)
-    mlm_model.eval()
-    return tokenizer, model, mlm_model
+    print(f"\nAll artifacts generated in: {OUTPUT_DIR}")
 
 if __name__ == "__main__":
     main()

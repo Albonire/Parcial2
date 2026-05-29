@@ -5,11 +5,16 @@ Universidad de Pamplona - Ingeniería de Sistemas
 
 Este repositorio contiene el análisis científico integral del modelo de lenguaje de proteínas ESM-2. Se exploran desde los conceptos teóricos hasta la extracción de representaciones matemáticas y visualizaciones de atención.
 
-## Acceso Directo (Google Colab)
+## Acceso Directo e Informes
 
 Toda la lógica de ejecución y visualización está consolidada en un solo notebook interactivo:
 
 [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Albonire/Parcial2/blob/main/notebooks/esm2_analisis_completo.ipynb)
+
+### Otros Documentos
+- 📄 [Informe Técnico (HTML)](https://github.com/Albonire/Parcial2/blob/main/informe/informe_tecnico.html)
+- 📊 [Diapositivas del Proyecto](https://github.com/Albonire/Parcial2/blob/main/notebooks/diapositivas_esm2.html)
+- 📗 [Trabajo Escrito (PDF)](https://github.com/Albonire/Parcial2/blob/main/trabajo_segundo_corte_esm2_ciencia_datos_unipamplona_2026_1.pdf)
 
 ## Estructura del Proyecto Unificado
 
